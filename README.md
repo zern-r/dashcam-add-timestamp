@@ -195,7 +195,3 @@ root.mainloop()
 初始版本，提供最原始功能
 
 ---
-
----
-
-© 2024, Powered by Zern
