@@ -11,21 +11,6 @@
 希望透過自動化軟體來提升效率，包含上時間戳印 & 壓縮影片，加速檢舉舉證流程進行。
 
 ---
-
-## **> 軟體/原始碼下載**
-
-最新版本 (v1.0):
-
-原始碼        下載
-
-執行檔案    下載
-
-GitHub連結:
-
-[GitHub · Build and ship software on a single, collaborative platform](https://github.com)
-
----
-
 ## **> 原始碼架構**
 
 ```python
