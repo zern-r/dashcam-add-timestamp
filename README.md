@@ -195,3 +195,10 @@ root.mainloop()
 初始版本，提供最原始功能
 
 ---
+
+## **> 貢獻者**
+
+Zern @ SaferTW project
+https://safertw.notion.site/
+
+---
