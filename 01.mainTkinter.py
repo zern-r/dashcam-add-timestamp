@@ -2,10 +2,14 @@ import cv2
 import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from moviepy.editor import VideoFileClip
+from moviepy.editor import *
 from proglog import ProgressBarLogger
 import threading
 import os
+
+FFMPEG_BINARY = 'ffmpeg'  # Or full path like 'C:/ffmpeg/bin/ffmpeg.exe' on Windows
+os.environ['FFMPEG_BINARY'] = FFMPEG_BINARY
+os.environ['IMAGEIO_FFMPEG_EXE'] = FFMPEG_BINARY
 
 class MyBarLogger(ProgressBarLogger):
     
@@ -68,7 +72,7 @@ def process_video(video_path, start_time_str):
 
         # 計算當前幀的時間戳
         current_time = start_time + datetime.timedelta(seconds=frame_index / fps)
-        timestamp_str = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # 顯示到毫秒
+        timestamp_str = current_time.strftime('%Y-%m-%d %H:%M:%S')  # 顯示到毫秒
 
         # 在幀上疊加時間戳
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -95,7 +99,7 @@ def process_video(video_path, start_time_str):
 
     compress_video(output_path, output_path_compressed)
 
-    messagebox.showinfo("完成", f"處理完成！輸出檔案已儲存為：\n{output_path}")
+    #messagebox.showinfo("完成", f"處理完成！輸出檔案已儲存為：\n{output_path}")
     start_button.config(state=tk.NORMAL)
 
 def select_video():
