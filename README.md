@@ -18,10 +18,14 @@ import cv2
 import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from moviepy.editor import VideoFileClip
+from moviepy.editor import *
 from proglog import ProgressBarLogger
 import threading
 import os
+
+FFMPEG_BINARY = 'ffmpeg'  # Or full path like 'C:/ffmpeg/bin/ffmpeg.exe' on Windows
+os.environ['FFMPEG_BINARY'] = FFMPEG_BINARY
+os.environ['IMAGEIO_FFMPEG_EXE'] = FFMPEG_BINARY
 
 class MyBarLogger(ProgressBarLogger):
     
@@ -38,7 +42,7 @@ class MyBarLogger(ProgressBarLogger):
 
 logger = MyBarLogger()
 
-def compress_video(input_file, output_file, bitrate="1200k"):
+def compress_video(input_file, output_file, bitrate="1800k"):
     clip = VideoFileClip(input_file)
     clip.write_videofile(output_file, bitrate=bitrate, logger=logger, verbose=False)
 
@@ -82,34 +86,38 @@ def process_video(video_path, start_time_str):
         if not ret:
             break
 
-        # 計算當前幀的時間戳
         current_time = start_time + datetime.timedelta(seconds=frame_index / fps)
-        timestamp_str = current_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # 顯示到毫秒
-
-        # 在幀上疊加時間戳
+        timestamp_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
         font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 1.2
-        font_color = (255, 255, 255)  # 白色字體
+        font_color = (255, 255, 255)
         thickness = 2
-        position = (10, height - 20)  # 位置在左下角
+        position = (10, height - 20)
+
+        # 動態調整 font_scale 讓字串寬度約為畫面寬度 15%
+        target_width = int(width * 0.20)
+        font_scale = 1.0
+        (text_width, text_height), _ = cv2.getTextSize(timestamp_str, font, font_scale, thickness)
+        # 以迴圈方式微調 font_scale
+        while text_width < target_width:
+            font_scale += 0.1
+            (text_width, text_height), _ = cv2.getTextSize(timestamp_str, font, font_scale, thickness)
+        while text_width > target_width and font_scale > 0.1:
+            font_scale -= 0.01
+            (text_width, text_height), _ = cv2.getTextSize(timestamp_str, font, font_scale, thickness)
 
         cv2.putText(frame, timestamp_str, position, font, font_scale, font_color, thickness)
-
-        # 寫入輸出影片
         out.write(frame)
-
         frame_index += 1
-
-        # 更新進度條
         progress = int(frame_index * 100 / total_frames)
         progress_var.set(progress)
         root.update_idletasks()
+
 
     # 釋放資源
     cap.release()
     out.release()
 
-    compress_video(output_path, output_path_compressed)
+    #compress_video(output_path, output_path_compressed)
 
     messagebox.showinfo("完成", f"處理完成！輸出檔案已儲存為：\n{output_path}")
     start_button.config(state=tk.NORMAL)
@@ -149,7 +157,7 @@ def on_closing():
 
 # 創建主窗口
 root = tk.Tk()
-root.title("影片加時間戳 v1.0 | SaferTW ")
+root.title("影片加時間戳 v1.2 | 安全台灣SaferTW ")
 root.resizable(False, False)
 
 # 影片檔案選擇部分
@@ -190,8 +198,10 @@ root.mainloop()
 
 ## **> 歷史版本**
 
-### v1.0
+### v1.2
+新增mov支持，並依照寬度來決定浮水印大小
 
+### v1.0
 初始版本，提供最原始功能
 
 ---
