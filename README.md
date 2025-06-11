@@ -21,7 +21,10 @@ from tkinter import filedialog, messagebox, ttk
 from moviepy.editor import *
 from proglog import ProgressBarLogger
 import threading
+import subprocess
 import os
+import pytz
+
 
 FFMPEG_BINARY = 'ffmpeg'  # Or full path like 'C:/ffmpeg/bin/ffmpeg.exe' on Windows
 os.environ['FFMPEG_BINARY'] = FFMPEG_BINARY
@@ -41,6 +44,31 @@ class MyBarLogger(ProgressBarLogger):
         root.update_idletasks()
 
 logger = MyBarLogger()
+
+def get_video_creation_time(video_path):
+    try:
+        cmd = [
+            'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+            '-show_entries', 'format_tags=creation_time',
+            '-of', 'default=noprint_wrappers=1:nokey=1', video_path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        creation_time = result.stdout.strip()
+        if creation_time:
+            try:
+                # 解析 ISO 格式
+                dt = datetime.datetime.fromisoformat(creation_time.replace("Z", "+00:00"))
+                # 轉換到台灣時區
+                dt_utc = dt.astimezone(pytz.utc)
+                tz_tw = pytz.timezone('Asia/Taipei')
+                dt_tw = dt_utc.astimezone(tz_tw)
+                return dt_tw.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print("time parse error:", e)
+        return None
+    except Exception as e:
+        print("ffprobe error:", e)
+        return None
 
 def compress_video(input_file, output_file, bitrate="1800k"):
     clip = VideoFileClip(input_file)
@@ -127,6 +155,13 @@ def select_video():
     if video_path:
         video_entry.delete(0, tk.END)
         video_entry.insert(0, video_path)
+        # 先嘗試用 ffprobe 取得 creation_time
+        creation_time = get_video_creation_time(video_path)
+        if creation_time:
+            time_entry.delete(0, tk.END)
+            time_entry.insert(0, creation_time)
+            return
+        # 若沒抓到，再用檔案名稱猜測
         file_name = (video_path.split("/"))[-1]
         try:
             start_date_ = (file_name.split("_"))[0]
@@ -136,7 +171,14 @@ def select_video():
             time_entry.delete(0, tk.END)
             time_entry.insert(0, start_date_ + " " + start_time_)
         except:
-            pass
+            # 若沒抓到，再用檔案最後修改時間
+            try:
+                mtime = os.path.getmtime(video_path)
+                dt = datetime.datetime.fromtimestamp(mtime)
+                time_entry.delete(0, tk.END)
+                time_entry.insert(0, dt.strftime('%Y-%m-%d %H:%M:%S'))
+            except:
+                pass
 
 def start_processing():
     video_path = video_entry.get()
@@ -157,7 +199,7 @@ def on_closing():
 
 # 創建主窗口
 root = tk.Tk()
-root.title("影片加時間戳 v1.2 | 安全台灣SaferTW ")
+root.title("影片加時間戳 v1.3 | 安全台灣SaferTW ")
 root.resizable(False, False)
 
 # 影片檔案選擇部分
@@ -192,11 +234,15 @@ progress_bar.grid(row=3, column=0, columnspan=3, padx=10, pady=10, sticky=tk.EW)
 # 運行主循環
 root.mainloop()
 
+
 ```
 
 ---
 
 ## **> 歷史版本**
+
+### v1.3
+更新可以自動讀取影片metadata並帶入Input
 
 ### v1.2
 新增mov支持，並依照寬度來決定浮水印大小
